@@ -1,18 +1,14 @@
 {
-  "name": "@creon/workflow",
+  "name": "@creon/x402-shop",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "main": "dist/main.js",
   "scripts": {
     "build": "pnpm -w tsc -p tsconfig.json",
     "lint": "pnpm -w eslint .",
-    "test": "pnpm -w vitest run",
+    "test": "pnpm -w vitest run --passWithNoTests",
     "typecheck": "pnpm -w tsc -p tsconfig.json --noEmit"
   },
-  "license": "Apache-2.0",
-  "dependencies": {
-    "@chainlink/cre-sdk": "^1.0.7"
-  },
+  "dependencies": {},
   "devDependencies": {}
 }

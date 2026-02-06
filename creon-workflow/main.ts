@@ -12,14 +12,7 @@ const onCronTrigger = (runtime: Runtime<Config>): string => {
 const initWorkflow = (config: Config) => {
   const cron = new CronCapability();
 
-  return [
-    handler(
-      cron.trigger(
-        { schedule: config.schedule }
-      ), 
-      onCronTrigger
-    ),
-  ];
+  return [handler(cron.trigger({ schedule: config.schedule }), onCronTrigger)];
 };
 
 export async function main() {

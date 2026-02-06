@@ -4,5 +4,5 @@
     "lib": ["ES2022"],
     "outDir": "./dist"
   },
-  "include": ["main.ts", "test/**/*.ts", "vitest.config.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts"]
 }

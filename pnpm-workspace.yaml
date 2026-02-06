@@ -1,0 +1,5 @@
+packages:
+  - "creon-workflow"
+  - "creon-sdk"
+  - "contracts"
+  - "x402-shop"
