@@ -3,15 +3,15 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/src/index.js"
   },
   "scripts": {
-    "build": "pnpm -w tsc -p tsconfig.json",
-    "lint": "pnpm -w eslint .",
-    "test": "pnpm -w vitest run --passWithNoTests",
-    "typecheck": "pnpm -w tsc -p tsconfig.json --noEmit"
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {},
   "devDependencies": {}

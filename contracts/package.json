@@ -3,8 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "lint": "pnpm -w eslint .",
-    "test": "pnpm -w vitest run --passWithNoTests"
+    "build": "node ./scripts/run-if-foundry.mjs forge build",
+    "deploy:sepolia": "node ./scripts/run-if-foundry.mjs node ./scripts/deploy-entitlement-registry.mjs",
+    "fmt": "node ./scripts/run-if-foundry.mjs forge fmt",
+    "fmt:check": "node ./scripts/run-if-foundry.mjs forge fmt --check",
+    "lint": "pnpm run fmt:check",
+    "test": "node ./scripts/run-if-foundry.mjs forge test"
   },
   "dependencies": {},
   "devDependencies": {}

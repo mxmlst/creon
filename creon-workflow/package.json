@@ -5,10 +5,10 @@
   "type": "module",
   "main": "dist/main.js",
   "scripts": {
-    "build": "pnpm -w tsc -p tsconfig.json",
-    "lint": "pnpm -w eslint .",
-    "test": "pnpm -w vitest run",
-    "typecheck": "pnpm -w tsc -p tsconfig.json --noEmit"
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "license": "Apache-2.0",
   "dependencies": {

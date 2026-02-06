@@ -1,0 +1,12 @@
+{
+  "version": "1",
+  "merchant_id": "demo-merchant",
+  "buyer": "0x000000000000000000000000000000000000dEaD",
+  "product_id": "article:42",
+  "payment_ref": "x402:receipt:abc123",
+  "entitlement_id": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "tx_hash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+  "workflow_version": "0.0.0",
+  "policy_version": "0.0.0",
+  "issued_at": "2026-02-06T00:00:00.000Z"
+}
