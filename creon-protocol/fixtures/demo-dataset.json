@@ -1,0 +1,27 @@
+{
+  "merchant_id": "demo-merchant",
+  "buyer": "0x000000000000000000000000000000000000dEaD",
+  "products": [
+    {
+      "product_id": "article:42",
+      "amount": "10.00",
+      "currency": "USD",
+      "payment_ref": "x402:receipt:demo-article-42",
+      "idempotency_key": "idemp-1"
+    },
+    {
+      "product_id": "file:drift-pack",
+      "amount": "15.00",
+      "currency": "USD",
+      "payment_ref": "x402:receipt:demo-drift-pack",
+      "idempotency_key": "idemp-2"
+    },
+    {
+      "product_id": "pass:studio",
+      "amount": "25.00",
+      "currency": "USD",
+      "payment_ref": "x402:receipt:demo-studio-pass",
+      "idempotency_key": "idemp-3"
+    }
+  ]
+}

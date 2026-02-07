@@ -17,6 +17,8 @@ This enables **agentic commerce** and conventional checkout flows with the same 
 ## Quick Links
 
 - [Complete Workflow Guide](creon-workflow/COMPLETE_WORKFLOW.md)
+- [Architecture & Trust Model](docs/ARCHITECTURE.md)
+- [Audit & Reconciliation](docs/AUDIT_AND_RECONCILIATION.md)
 - [Workflow package](creon-workflow)
 - [Demo app](x402-next-app)
 - [Contracts](contracts)
@@ -214,6 +216,16 @@ Package‑specific:
 pnpm --filter x402-next-app test
 pnpm --filter creon-protocol test
 pnpm --filter creon-workflow test
+```
+
+---
+
+## One‑Command Demo
+
+Runs install → purchase → re‑unlock → starts the demo UI.
+
+```bash
+node scripts/run-demo.mjs
 ```
 
 ---
