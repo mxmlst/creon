@@ -1,21 +1,34 @@
 import { NextResponse } from "next/server";
 
+import { createThirdwebClient, defineChain } from "thirdweb";
+import { facilitator, settlePayment } from "thirdweb/x402";
+
 import { runWorkflow } from "@/lib/cre";
+import { requireMinimumAmount, requirePaymentRefFormat } from "@/lib/guards";
 import { products } from "@/lib/products";
-import {
-  buildPaymentRequired,
-  decodeHeader,
-  encodeHeader,
-  isValidSignature,
-  type X402PaymentSignature,
-} from "@/lib/x402";
+import { checkAndMarkReplay, fingerprintIntent } from "@/lib/replay";
 
 export const runtime = "nodejs";
 
-const getSignatureHeader = (req: Request) =>
+const getPaymentHeader = (req: Request) =>
   req.headers.get("payment-signature") ??
+  req.headers.get("x-payment") ??
   req.headers.get("x-payment-signature") ??
   req.headers.get("payment-authorization");
+
+const parseChainId = () => {
+  const raw = process.env.X402_CHAIN_ID ?? process.env.X402_NETWORK ?? "11155111";
+  const match = raw.match(/\d+/g);
+  if (!match || match.length === 0) return 11155111;
+  return Number(match[match.length - 1]);
+};
+
+const applyHeaders = (response: NextResponse, headers?: Record<string, string>) => {
+  if (!headers) return;
+  Object.entries(headers).forEach(([key, value]) => {
+    response.headers.set(key, value);
+  });
+};
 
 export async function POST(req: Request) {
   try {
@@ -30,52 +43,98 @@ export async function POST(req: Request) {
       );
     }
 
-  const required = buildPaymentRequired({
-    resource: new URL(req.url).pathname,
-    amount: String(Math.round(product.priceUsd * 100)),
-    memo: product.title,
-  });
-
-    const signatureRaw = getSignatureHeader(req);
-    if (!signatureRaw) {
-      const response = NextResponse.json(
-        { ok: false, error: required.error, required },
-        { status: 402 }
+    const amount = String(intent.amount ?? product.priceUsd.toFixed(2));
+    const minCheck = requireMinimumAmount(amount, product.priceUsd);
+    if (!minCheck.ok) {
+      return NextResponse.json(
+        { ok: false, error: { code: minCheck.error, message: "underpayment" } },
+        { status: 400 }
       );
-      response.headers.set("payment-required", encodeHeader(required));
-      response.headers.set("cache-control", "no-store");
-      return response;
     }
 
-    let signature: X402PaymentSignature;
-    try {
-      signature = decodeHeader<X402PaymentSignature>(signatureRaw);
-    } catch {
-      const response = NextResponse.json(
-        { ok: false, error: "invalid payment signature", required },
-        { status: 402 }
-      );
-      response.headers.set("payment-required", encodeHeader(required));
-      response.headers.set("cache-control", "no-store");
-      return response;
-    }
-
-    if (!isValidSignature(signature, required.accepts[0])) {
-      const response = NextResponse.json(
-        { ok: false, error: "payment verification failed", required },
-        { status: 402 }
-      );
-      response.headers.set("payment-required", encodeHeader(required));
-      response.headers.set("cache-control", "no-store");
-      return response;
-    }
-
-    const payment_ref = signature.payment_ref ?? intent.payment_ref;
+    const payment_ref = intent.payment_ref;
     if (!payment_ref) {
       return NextResponse.json(
         { ok: false, error: { code: "MISSING_PAYMENT_REF", message: "payment_ref required" } },
         { status: 400 }
       );
+    }
+
+    const refCheck = requirePaymentRefFormat(payment_ref);
+    if (!refCheck.ok) {
+      return NextResponse.json(
+        { ok: false, error: { code: refCheck.error, message: "invalid receipt format" } },
+        { status: 400 }
+      );
+    }
+
+    const replayCheck = checkAndMarkReplay(
+      payment_ref,
+      fingerprintIntent({
+        merchant_id: intent.merchant_id,
+        buyer: intent.buyer,
+        product_id: intent.product_id,
+        amount,
+        currency: intent.currency ?? "USD",
+      })
+    );
+    if (!replayCheck.ok) {
+      return NextResponse.json(
+        { ok: false, error: { code: replayCheck.reason, message: "payment_ref reused" } },
+        { status: 409 }
+      );
+    }
+
+    const paymentData = getPaymentHeader(req);
+    const secretKey = process.env.THIRDWEB_SECRET_KEY;
+    const payTo = process.env.X402_PAY_TO;
+
+    if (!secretKey || !payTo) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: {
+            code: "X402_CONFIG",
+            message: "THIRDWEB_SECRET_KEY and X402_PAY_TO are required",
+          },
+        },
+        { status: 500 }
+      );
+    }
+
+    const chainId = parseChainId();
+    const chain = defineChain(chainId);
+    const client = createThirdwebClient({ secretKey });
+    const x402Facilitator = facilitator({ client, serverWalletAddress: payTo });
+
+    const settlement = (await settlePayment({
+      paymentData,
+      resourceUrl: new URL(req.url).toString(),
+      method: "POST",
+      payTo,
+      price: `$${product.priceUsd.toFixed(2)}`,
+      network: chain,
+      scheme: "exact",
+      x402Version: 2,
+      facilitator: x402Facilitator,
+    })) as {
+      status: number;
+      responseBody: unknown;
+      responseHeaders?: Record<string, string>;
+    };
+
+    if (settlement.status !== 200) {
+      const body = settlement.responseBody ?? {};
+      if (typeof body === "string") {
+        const response = new NextResponse(body, { status: settlement.status });
+        applyHeaders(response as NextResponse, settlement.responseHeaders);
+        response.headers.set("cache-control", "no-store");
+        return response;
+      }
+      const response = NextResponse.json(body, { status: settlement.status });
+      applyHeaders(response, settlement.responseHeaders);
+      response.headers.set("cache-control", "no-store");
+      return response;
     }
 
     const payload = {
@@ -84,7 +143,7 @@ export async function POST(req: Request) {
         merchant_id: intent.merchant_id,
         buyer: intent.buyer,
         product_id: intent.product_id,
-        amount: intent.amount ?? product.priceUsd.toFixed(2),
+        amount,
         currency: intent.currency ?? "USD",
         payment_ref,
         idempotency_key: intent.idempotency_key ?? "idemp-1",

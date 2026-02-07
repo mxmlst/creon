@@ -1,15 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { createThirdwebClient } from "thirdweb";
+import { wrapFetchWithPayment } from "thirdweb/x402";
+import { createWallet, type Wallet } from "thirdweb/wallets";
 
 import { products } from "@/lib/products";
-import {
-  buildPaymentRequired,
-  buildPaymentSignature,
-  decodeHeader,
-  encodeHeader,
-  type X402PaymentRequired,
-} from "@/lib/x402";
 
 type PurchaseResult = {
   ok: boolean;
@@ -53,12 +49,11 @@ export default function HomePage() {
   const [merchantId, setMerchantId] = useState("demo-merchant");
   const [buyer, setBuyer] = useState(defaultBuyer);
   const [paymentRef, setPaymentRef] = useState(makePaymentRef());
-  const [paymentRequired, setPaymentRequired] = useState<X402PaymentRequired | null>(null);
-  const [paymentSignature, setPaymentSignature] = useState<string | null>(null);
   const [purchaseResult, setPurchaseResult] = useState<PurchaseResult | null>(null);
   const [reunlockResult, setReunlockResult] = useState<ReunlockResult | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
+  const walletRef = useRef<Wallet | null>(null);
 
   const product = useMemo(
     () => products.find((item) => item.id === productId) ?? products[0],
@@ -110,59 +105,44 @@ export default function HomePage() {
     return JSON.parse(text) as T;
   };
 
+  const getWallet = async () => {
+    if (walletRef.current) return walletRef.current;
+    const wallet = createWallet("io.metamask");
+    await wallet.connect({
+      client: createThirdwebClient({
+        clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID ?? "",
+      }),
+    });
+    walletRef.current = wallet;
+    return wallet;
+  };
+
   const handlePurchase = async () => {
     setStatus("Requesting purchase...");
     setPurchaseResult(null);
-    setPaymentRequired(null);
 
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-
-    if (paymentSignature) {
-      headers["payment-signature"] = paymentSignature;
-    }
-
-    const response = await fetch("/api/purchase", {
-      method: "POST",
-      headers,
-      body: JSON.stringify(purchasePayload),
-    });
-
-    if (response.status === 402) {
-      const required = response.headers.get("payment-required");
-      if (required) {
-        setPaymentRequired(decodeHeader<X402PaymentRequired>(required));
-      }
-      setDebugInfo(response.headers.get("x-cre-debug"));
-      setStatus("Payment required. Generate signature to continue.");
+    const clientId = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID ?? "";
+    if (!clientId) {
+      setStatus("Missing NEXT_PUBLIC_THIRDWEB_CLIENT_ID.");
       return;
     }
+
+    const wallet = await getWallet();
+    const client = createThirdwebClient({ clientId });
+    const fetchWithPayment = wrapFetchWithPayment(fetch, client, wallet);
+
+    const response = await fetchWithPayment("/api/purchase", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(purchasePayload),
+    });
 
     setDebugInfo(response.headers.get("x-cre-debug"));
     const data = await safeJson<PurchaseResult>(response);
     setPurchaseResult(data);
     setStatus(data.ok ? "Purchase complete." : "Purchase failed.");
-  };
-
-  const handleGenerateSignature = () => {
-    const required =
-      paymentRequired?.accepts?.[0] ??
-      buildPaymentRequired({
-        resource: "/api/purchase",
-        amount: String(Math.round(product.priceUsd * 100)),
-        memo: product.title,
-      }).accepts[0];
-
-    const signature = buildPaymentSignature({
-      amount: required.amount,
-      payer: buyer,
-      payment_ref: paymentRef,
-      memo: product.title,
-    });
-
-    setPaymentSignature(encodeHeader(signature));
-    setStatus("Payment signature generated. Retry purchase.");
   };
 
   const handleReunlock = async () => {
@@ -234,7 +214,7 @@ export default function HomePage() {
             <div className="glass rounded-3xl p-6 shadow-glow">
               <h2 className="text-xl font-semibold">Purchase Request</h2>
               <p className="text-sand/70 text-sm mt-1">
-                Manual x402 flow: request, receive 402, attach payment signature, retry.
+                x402 flow: connect wallet, authorize payment, mint entitlement.
               </p>
 
               <div className="mt-5 grid gap-3 text-sm">
@@ -277,13 +257,7 @@ export default function HomePage() {
                   className="rounded-full bg-ember px-5 py-2 text-sm font-semibold text-night"
                   onClick={handlePurchase}
                 >
-                  Purchase
-                </button>
-                <button
-                  className="rounded-full border border-white/20 px-5 py-2 text-sm"
-                  onClick={handleGenerateSignature}
-                >
-                  Generate Payment Signature
+                  Purchase (x402)
                 </button>
                 <button
                   className="rounded-full border border-white/20 px-5 py-2 text-sm"
@@ -300,19 +274,6 @@ export default function HomePage() {
                 </p>
               )}
 
-              {paymentRequired && (
-                <div className="mt-5 rounded-2xl border border-ember/40 bg-ember/10 p-4 text-sm">
-                  <div className="font-semibold">Payment Required</div>
-                  <div className="text-sand/80">
-                    Amount: {paymentRequired.accepts[0]?.amount} · Asset:{" "}
-                    {paymentRequired.accepts[0]?.asset}
-                  </div>
-                  <div className="text-sand/60 text-xs mt-2">
-                    Pay to {paymentRequired.accepts[0]?.payTo} on{" "}
-                    {paymentRequired.accepts[0]?.network}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
