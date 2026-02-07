@@ -1,4 +1,4 @@
-import { HTTPCapability, handler, Runner, type Runtime } from "@chainlink/cre-sdk";
+import { HTTPCapability, handler, Runner, type Runtime, sendErrorResponse } from "@chainlink/cre-sdk";
 
 import { PurchaseError, ReunlockError } from "./src/errors";
 import { createEvmAdapter } from "./src/evm";
@@ -164,3 +164,5 @@ export async function main() {
   const runner = await Runner.newRunner<Config>();
   await runner.run(initWorkflow);
 }
+
+main().catch(sendErrorResponse)

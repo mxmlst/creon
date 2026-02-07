@@ -1,10 +1,27 @@
-import { EVMClient, Report, type Runtime } from "@chainlink/cre-sdk";
+import { EVMClient, type Runtime } from "@chainlink/cre-sdk";
 import { decodeFunctionResult, encodeAbiParameters, encodeFunctionData, getAddress } from "viem";
 
 import { PurchaseError } from "./errors";
 import { bytesToHex, hexToBase64 } from "./encoding";
 import type { PurchaseEvm } from "./purchase";
 import type { ReunlockEvm } from "./reunlock";
+
+const encodeCallMsg = (payload: {
+  from: `0x${string}`;
+  to: `0x${string}`;
+  data: `0x${string}`;
+}) => ({
+  from: hexToBase64(payload.from),
+  to: hexToBase64(payload.to),
+  data: hexToBase64(payload.data),
+});
+
+const prepareReportRequest = (hexEncodedPayload: `0x${string}`) => ({
+  encodedPayload: hexToBase64(hexEncodedPayload),
+  encoderName: "evm",
+  signingAlgo: "ecdsa",
+  hashingAlgo: "keccak256",
+});
 
 const registryAbi = [
   {
@@ -68,10 +85,11 @@ export const createEvmAdapter = (
 
       const reply = client
         .callContract(runtime, {
-          call: {
-            to: hexToBase64(contractAddress),
-            data: hexToBase64(dataHex),
-          },
+          call: encodeCallMsg({
+            from: contractAddress,
+            to: contractAddress,
+            data: dataHex,
+          }),
         })
         .result();
 
@@ -112,13 +130,7 @@ export const createEvmAdapter = (
 
       const rawReport =
         `0x${actionGrant.toString(16).padStart(2, "0")}${reportData.slice(2)}` as `0x${string}`;
-      const report = new Report({
-        configDigest: hexToBase64("0x"),
-        seqNr: "0",
-        reportContext: hexToBase64("0x"),
-        rawReport: hexToBase64(rawReport),
-        sigs: [],
-      });
+      const report = runtime.report(prepareReportRequest(rawReport)).result();
 
       const result = client
         .writeReport(runtime, {
@@ -149,13 +161,7 @@ export const createEvmAdapter = (
 
       const rawReport =
         `0x${actionConsume.toString(16).padStart(2, "0")}${reportData.slice(2)}` as `0x${string}`;
-      const report = new Report({
-        configDigest: hexToBase64("0x"),
-        seqNr: "0",
-        reportContext: hexToBase64("0x"),
-        rawReport: hexToBase64(rawReport),
-        sigs: [],
-      });
+      const report = runtime.report(prepareReportRequest(rawReport)).result();
 
       const result = client
         .writeReport(runtime, {

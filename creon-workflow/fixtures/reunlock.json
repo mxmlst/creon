@@ -1,0 +1,8 @@
+{
+  "action": "reunlock",
+  "intent": {
+    "merchant_id": "demo-merchant",
+    "buyer": "0x000000000000000000000000000000000000dEaD",
+    "product_id": "article:42"
+  }
+}

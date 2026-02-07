@@ -1,0 +1,16 @@
+{
+  "action": "purchase",
+  "intent": {
+    "merchant_id": "demo-merchant",
+    "buyer": "0x000000000000000000000000000000000000dEaD",
+    "product_id": "article:42",
+    "amount": "10.00",
+    "currency": "USD",
+    "payment_ref": "x402:receipt:abc123",
+    "idempotency_key": "idemp-1"
+  },
+  "payment_proof": {
+    "kind": "x402",
+    "receipt": { "id": "abc123" }
+  }
+}

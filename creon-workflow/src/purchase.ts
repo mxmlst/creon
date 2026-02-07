@@ -46,13 +46,20 @@ export const processPurchase = async (params: {
   evm: PurchaseEvm;
   config: PurchaseConfig;
   issued_at: string;
+  log?: (step: number, message: string, data?: Record<string, unknown>) => void;
 }): Promise<StoredPurchaseOutcome> => {
+  params.log?.(1, "validate input");
   const intent = PurchaseIntentSchema.parse(params.input.intent);
   const paymentProof = PaymentProofSchema.safeParse(params.input.payment_proof);
 
   if (!paymentProof.success) {
     throw new PurchaseError("MISSING_PAYMENT_PROOF", "payment_proof is required");
   }
+  params.log?.(1, "input validated", {
+    merchant_id: intent.merchant_id,
+    product_id: intent.product_id,
+    buyer: intent.buyer,
+  });
 
   const reqHash = requestHash(intent);
   const existing = await params.stores.idempotency.getOutcome({
@@ -61,6 +68,7 @@ export const processPurchase = async (params: {
   });
 
   if (existing) {
+    params.log?.(2, "idempotency hit");
     if (existing.request_hash !== reqHash) {
       throw new PurchaseError(
         "IDEMPOTENCY_CONFLICT",
@@ -72,15 +80,18 @@ export const processPurchase = async (params: {
 
   const replay = await params.stores.replay.getPaymentRef(intent.payment_ref);
   if (replay) {
+    params.log?.(2, "replay detected", { entitlement_id: replay.entitlement_id });
     throw new PurchaseError("REPLAY_DETECTED", "payment_ref has already been used");
   }
 
+  params.log?.(3, "derive entitlement id");
   const derivation = deriveEntitlementId({
     merchant_id: intent.merchant_id,
     buyer: intent.buyer,
     product_id: intent.product_id,
   });
 
+  params.log?.(4, "read entitlement onchain");
   const entitlement = await params.evm.readEntitlement({
     merchant_id_hash: derivation.merchant_id_hash,
     buyer: intent.buyer,
@@ -91,6 +102,7 @@ export const processPurchase = async (params: {
   let tx_hash: `0x${string}` = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
   if (!entitlement.active) {
+    params.log?.(5, "mint entitlement onchain");
     const write = await params.evm.writeGrant({
       merchant_id_hash: derivation.merchant_id_hash,
       buyer: intent.buyer,
@@ -102,6 +114,7 @@ export const processPurchase = async (params: {
     minted = true;
     tx_hash = write.tx_hash;
   }
+  params.log?.(5, "entitlement result", { minted, tx_hash });
 
   const receipt = {
     version: "1",
@@ -123,6 +136,7 @@ export const processPurchase = async (params: {
     minted,
     amount: intent.amount,
   });
+  params.log?.(6, "artifacts built", { receipt_hash: artifacts.receipt_hash });
 
   const outcome: StoredPurchaseOutcome = {
     minted,
@@ -147,6 +161,7 @@ export const processPurchase = async (params: {
     payment_ref: intent.payment_ref,
     entitlement_id: derivation.entitlement_id,
   });
+  params.log?.(7, "idempotency + replay persisted");
 
   return outcome;
 };

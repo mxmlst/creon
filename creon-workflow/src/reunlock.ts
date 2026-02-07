@@ -36,15 +36,24 @@ export const processReunlock = async (params: {
   evm: ReunlockEvm;
   config: ReunlockConfig;
   issued_at: string;
+  log?: (step: number, message: string, data?: Record<string, unknown>) => void;
 }): Promise<{ grant: UnlockGrant; tx_hash?: `0x${string}` }> => {
+  params.log?.(1, "validate input");
   const intent = AccessIntentSchema.parse(params.input.intent);
+  params.log?.(1, "input validated", {
+    merchant_id: intent.merchant_id,
+    product_id: intent.product_id,
+    buyer: intent.buyer,
+  });
 
+  params.log?.(2, "derive entitlement id");
   const derivation = deriveEntitlementId({
     merchant_id: intent.merchant_id,
     buyer: intent.buyer,
     product_id: intent.product_id,
   });
 
+  params.log?.(3, "read entitlement onchain");
   const entitlement = await params.evm.readEntitlement({
     merchant_id_hash: derivation.merchant_id_hash,
     buyer: intent.buyer,
@@ -65,6 +74,7 @@ export const processReunlock = async (params: {
 
   let tx_hash: `0x${string}` | undefined;
   if (entitlement.max_uses !== 0) {
+    params.log?.(4, "consume entitlement usage");
     const tx = await params.evm.consumeEntitlement({
       merchant_id_hash: derivation.merchant_id_hash,
       buyer: intent.buyer,
@@ -73,6 +83,7 @@ export const processReunlock = async (params: {
     tx_hash = tx.tx_hash;
   }
 
+  params.log?.(5, "entitlement allowed", { tx_hash });
   const expiresAt = new Date(
     new Date(params.issued_at).getTime() + params.config.default_grant_ttl_seconds * 1000
   ).toISOString();

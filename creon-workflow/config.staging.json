@@ -1,6 +1,6 @@
 {
   "chain": "ethereum-testnet-sepolia",
-  "entitlement_registry": "0x0000000000000000000000000000000000000000",
+  "entitlement_registry": "0x86C7537A999fD380D194634e643c116777b75814",
   "workflow_version": "0.0.0",
   "policy_version": "0.0.0",
   "idempotency_db_path": "./.creon-idempotency.sqlite",
