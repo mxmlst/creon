@@ -4,3 +4,4 @@ packages:
   - "creon-protocol"
   - "contracts"
   - "x402-shop"
+  - "x402-next-app"
