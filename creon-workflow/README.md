@@ -1,53 +1,63 @@
-# Typescript Simple Workflow Example
+# Creon Purchase Workflow
 
-This template provides a simple Typescript workflow example. It shows how to create a simple "Hello World" workflow using Typescript.
+This workflow implements Phase 3: paid purchase via HTTP, idempotency + replay protection, onchain entitlement mint,
+and deterministic artifacts (receipt, accounting packet, audit bundle).
 
-Steps to run the example
+## Config
 
-## 1. Update .env file
+`config.staging.json` and `config.production.json` require:
 
-You need to add a private key to env file. This is specifically required if you want to simulate chain writes. For that to work the key should be valid and funded.
-If your workflow does not do any chain write then you can just put any dummy key as a private key. e.g.
-
-```
-CRE_ETH_PRIVATE_KEY=0000000000000000000000000000000000000000000000000000000000000001
-```
-
-Note: Make sure your `workflow.yaml` file is pointing to the config.json, example:
-
-```yaml
-staging-settings:
-  user-workflow:
-    workflow-name: "hello-world"
-  workflow-artifacts:
-    workflow-path: "./main.ts"
-    config-path: "./config.json"
+```json
+{
+  "chain": "ethereum-testnet-sepolia",
+  "entitlement_registry": "0x0000000000000000000000000000000000000000",
+  "workflow_version": "0.0.0",
+  "policy_version": "0.0.0",
+  "idempotency_db_path": "./.creon-idempotency.sqlite",
+  "authorized_keys": []
+}
 ```
 
-## 2. Install dependencies
+## HTTP Input
 
-If `bun` is not already installed, see https://bun.com/docs/installation for installing in your environment.
+The HTTP trigger expects JSON:
+
+```json
+{
+  "action": "purchase",
+  "intent": {
+    "merchant_id": "demo-merchant",
+    "buyer": "0x000000000000000000000000000000000000dEaD",
+    "product_id": "article:42",
+    "amount": "10.00",
+    "currency": "USD",
+    "payment_ref": "x402:receipt:abc123",
+    "idempotency_key": "idemp-1"
+  },
+  "payment_proof": {
+    "kind": "x402",
+    "receipt": {
+      "id": "abc123"
+    }
+  }
+}
+```
+
+For re-unlock:
+
+```json
+{
+  "action": "reunlock",
+  "intent": {
+    "merchant_id": "demo-merchant",
+    "buyer": "0x000000000000000000000000000000000000dEaD",
+    "product_id": "article:42"
+  }
+}
+```
+
+## Simulate via CRE CLI
 
 ```bash
-cd <workflow-name> && bun install
-```
-
-Example: For a workflow directory named `hello-world` the command would be:
-
-```bash
-cd hello-world && bun install
-```
-
-## 3. Simulate the workflow
-
-Run the command from <b>project root directory</b>
-
-```bash
-cre workflow simulate <path-to-workflow-directory> --target=staging-settings
-```
-
-Example: For workflow named `hello-world` the command would be:
-
-```bash
-cre workflow simulate ./hello-world --target=staging-settings
+cre workflow simulate ./creon-workflow --target=staging-settings
 ```

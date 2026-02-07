@@ -13,6 +13,9 @@ importers:
       "@types/node":
         specifier: ^22.13.1
         version: 22.19.9
+      "@types/sql.js":
+        specifier: ^1.4.4
+        version: 1.4.9
       eslint:
         specifier: ^9.19.0
         version: 9.39.2
@@ -53,6 +56,15 @@ importers:
       "@chainlink/cre-sdk":
         specifier: ^1.0.7
         version: 1.0.9(typescript@5.4.5)
+      "@creon/protocol":
+        specifier: workspace:*
+        version: link:../creon-protocol
+      sql.js:
+        specifier: ^1.13.0
+        version: 1.13.0
+      viem:
+        specifier: ^2.22.0
+        version: 2.34.0(typescript@5.4.5)(zod@3.25.76)
 
   x402-shop: {}
 
@@ -655,6 +667,12 @@ packages:
         integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==,
       }
 
+  "@types/emscripten@1.41.5":
+    resolution:
+      {
+        integrity: sha512-cMQm7pxu6BxtHyqJ7mQZ2kXWV5SLmugybFdHCBbJ5eHzOo6VhBckEgAT3//rP5FwPHNPeEiq4SmQ5ucBwsOo4Q==,
+      }
+
   "@types/estree@1.0.8":
     resolution:
       {
@@ -671,6 +689,12 @@ packages:
     resolution:
       {
         integrity: sha512-PD03/U8g1F9T9MI+1OBisaIARhSzeidsUjQaf51fOxrfjeiKN9bLVO06lHuHYjxdnqLWJijJHfqXPSJri2EM2A==,
+      }
+
+  "@types/sql.js@1.4.9":
+    resolution:
+      {
+        integrity: sha512-ep8b36RKHlgWPqjNG9ToUrPiwkhwh0AEzy883mO5Xnd+cL6VBH1EvSjBAAuxLUFF2Vn/moE3Me6v9E1Lo+48GQ==,
       }
 
   "@typescript-eslint/eslint-plugin@8.54.0":
@@ -1501,6 +1525,12 @@ packages:
       }
     engines: { node: ">=0.10.0" }
 
+  sql.js@1.13.0:
+    resolution:
+      {
+        integrity: sha512-RJbVP1HRDlUUXahJ7VMTcu9Rm1Nzw+EBpoPr94vnbD4LwR715F3CcxE2G2k45PewcaZ57pjetYa+LoSJLAASgA==,
+      }
+
   stackback@0.0.2:
     resolution:
       {
@@ -2016,6 +2046,8 @@ snapshots:
 
   "@standard-schema/spec@1.0.0": {}
 
+  "@types/emscripten@1.41.5": {}
+
   "@types/estree@1.0.8": {}
 
   "@types/json-schema@7.0.15": {}
@@ -2023,6 +2055,11 @@ snapshots:
   "@types/node@22.19.9":
     dependencies:
       undici-types: 6.21.0
+
+  "@types/sql.js@1.4.9":
+    dependencies:
+      "@types/emscripten": 1.41.5
+      "@types/node": 22.19.9
 
   "@typescript-eslint/eslint-plugin@8.54.0(@typescript-eslint/parser@8.54.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2)(typescript@5.9.3)":
     dependencies:
@@ -2579,6 +2616,8 @@ snapshots:
   siginfo@2.0.0: {}
 
   source-map-js@1.2.1: {}
+
+  sql.js@1.13.0: {}
 
   stackback@0.0.2: {}
 

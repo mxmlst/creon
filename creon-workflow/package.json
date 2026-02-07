@@ -12,7 +12,10 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "@chainlink/cre-sdk": "^1.0.7"
+    "@chainlink/cre-sdk": "^1.0.7",
+    "@creon/protocol": "workspace:*",
+    "sql.js": "^1.13.0",
+    "viem": "^2.22.0"
   },
   "devDependencies": {}
 }

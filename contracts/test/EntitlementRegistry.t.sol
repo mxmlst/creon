@@ -111,4 +111,14 @@ contract EntitlementRegistryTest is Test {
         (bool active,,,,,) = registry.getEntitlement(MERCHANT, BUYER, PRODUCT);
         assertFalse(active);
     }
+
+    function test_OnReport_Consume_IncrementsUses() public {
+        registry.grantEntitlement(MERCHANT, BUYER, PRODUCT, 0, 2, bytes32(0));
+        bytes memory metadata = abi.encodePacked(bytes32(0), bytes10(0), address(0));
+        bytes memory consumeReport = abi.encodePacked(uint8(3), abi.encode(MERCHANT, BUYER, PRODUCT));
+
+        forwarder.deliver(address(registry), metadata, consumeReport);
+        (, , , , uint32 uses, ) = registry.getEntitlement(MERCHANT, BUYER, PRODUCT);
+        assertEq(uses, 1);
+    }
 }

@@ -1,3 +1,9 @@
 {
-  "schedule": "*/30 * * * * *"
+  "chain": "ethereum-testnet-sepolia",
+  "entitlement_registry": "0x0000000000000000000000000000000000000000",
+  "workflow_version": "0.0.0",
+  "policy_version": "0.0.0",
+  "idempotency_db_path": "./.creon-idempotency.sqlite",
+  "default_grant_ttl_seconds": 3600,
+  "authorized_keys": []
 }

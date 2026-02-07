@@ -2,7 +2,11 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2022"],
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "@creon/protocol": ["../creon-protocol/src/index.ts"]
+    }
   },
-  "include": ["main.ts", "test/**/*.ts", "vitest.config.ts"]
+  "include": ["main.ts", "src/**/*.ts", "test/**/*.ts", "vitest.config.ts"]
 }

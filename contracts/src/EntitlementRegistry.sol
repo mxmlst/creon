@@ -46,6 +46,7 @@ contract EntitlementRegistry is ReceiverTemplate {
 
     uint8 private constant ACTION_GRANT = 1;
     uint8 private constant ACTION_REVOKE = 2;
+    uint8 private constant ACTION_CONSUME = 3;
 
     struct EntitlementGrant {
         bytes32 merchantIdHash;
@@ -149,6 +150,15 @@ contract EntitlementRegistry is ReceiverTemplate {
             return;
         }
 
+        if (action == ACTION_CONSUME) {
+            (bytes32 merchantIdHash, address buyer, bytes32 productIdHash) = abi.decode(
+                payload,
+                (bytes32, address, bytes32)
+            );
+            _applyConsume(merchantIdHash, buyer, productIdHash);
+            return;
+        }
+
         revert InvalidReport();
     }
 
@@ -186,5 +196,19 @@ contract EntitlementRegistry is ReceiverTemplate {
         }
         e.active = false;
         emit EntitlementRevoked(merchantIdHash, buyer, productIdHash);
+    }
+
+    function _applyConsume(bytes32 merchantIdHash, address buyer, bytes32 productIdHash) private {
+        Entitlement storage e = _entitlements[merchantIdHash][buyer][productIdHash];
+        if (!e.active) revert EntitlementNotActive();
+        if (e.validUntil != 0 && block.timestamp > e.validUntil) revert EntitlementExpired();
+        if (e.maxUses != 0 && e.uses >= e.maxUses) revert EntitlementUsesExceeded();
+
+        unchecked {
+            e.uses += 1;
+        }
+
+        bytes32 id = entitlementId(merchantIdHash, buyer, productIdHash);
+        emit EntitlementUsed(merchantIdHash, buyer, productIdHash, id, e.uses);
     }
 }
