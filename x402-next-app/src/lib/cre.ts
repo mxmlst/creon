@@ -3,9 +3,12 @@ import { mkdtemp, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-type WorkflowResult = {
+export type WorkflowResult = {
   ok: boolean;
-  outcome?: unknown;
+  outcome?: {
+    tx_hash?: string;
+    [key: string]: unknown;
+  };
   grant?: unknown;
   tx_hash?: string;
   error?: { code: string; message: string };

@@ -14,6 +14,17 @@ This enables **agentic commerce** and conventional checkout flows with the same 
 
 ---
 
+## Quick Links
+
+- [Complete Workflow Guide](creon-workflow/COMPLETE_WORKFLOW.md)
+- [Workflow package](creon-workflow)
+- [Demo app](x402-next-app)
+- [Contracts](contracts)
+- [Protocol](creon-protocol)
+- [SDK](creon-sdk)
+
+---
+
 ## What’s in this repo (and why)
 
 - `contracts/`  
@@ -30,6 +41,106 @@ This enables **agentic commerce** and conventional checkout flows with the same 
 
 - `x402-next-app/`  
   **Production‑grade demo store** built with `create-next-app` and real x402 verification. Includes purchase + re‑unlock UI and artifact downloads.
+
+---
+
+## Getting started (simulate first, then use the UI)
+
+### Prereqs
+
+- Node.js 20+  
+- pnpm  
+- CRE CLI installed and on PATH  
+- Sepolia RPC in `project.yaml`  
+- Wallet + RPC for deploying EntitlementRegistry  
+
+### Install
+
+Installs workspace dependencies for contracts, workflows, protocol, and demo app.
+
+```bash
+pnpm install
+```
+
+### Deploy EntitlementRegistry (Sepolia)
+
+Deploys the on‑chain registry contract that stores entitlements (the source of truth).
+
+```bash
+pnpm --filter contracts deploy:sepolia
+```
+
+### Configure workflow (staging)
+
+Points the CRE workflow at the deployed registry address so reads/writes go to the correct contract.
+
+Update `creon-workflow/config.staging.json` with your deployed address:
+
+```json
+{
+  "chain": "ethereum-testnet-sepolia",
+  "entitlement_registry": "0xYOUR_DEPLOYED_ADDRESS",
+  "workflow_version": "0.0.0",
+  "policy_version": "0.0.0",
+  "idempotency_db_path": "./.creon-idempotency.sqlite",
+  "default_grant_ttl_seconds": 3600,
+  "authorized_keys": []
+}
+```
+
+### Simulate the workflows first (CLI)
+
+Run a paid purchase simulation (non‑interactive):
+
+```bash
+cre workflow simulate ./creon-workflow --target=staging-settings \
+  --non-interactive --trigger-index=0 \
+  --http-payload @/m/creon/creon-workflow/fixtures/purchase.json \
+  --broadcast
+```
+
+Run a re‑unlock simulation:
+
+```bash
+cre workflow simulate ./creon-workflow --target=staging-settings \
+  --non-interactive --trigger-index=0 \
+  --http-payload @/m/creon/creon-workflow/fixtures/reunlock.json
+```
+
+See the full step‑by‑step guide: [Complete Workflow Guide](creon-workflow/COMPLETE_WORKFLOW.md).
+
+### Then run the demo app
+
+Starts the Next.js demo store where you can purchase once and re‑unlock later.
+
+```bash
+pnpm --filter x402-next-app dev
+```
+
+---
+
+## Environment (x402 + broadcast)
+
+Required for `x402-next-app`:
+
+```
+NEXT_PUBLIC_THIRDWEB_CLIENT_ID=...
+THIRDWEB_SECRET_KEY=...
+X402_PAY_TO=0xYourReceiverAddress
+X402_CHAIN_ID=11155111
+```
+
+Optional:
+
+```
+DISABLE_BROADCAST=1   # opt‑out of on‑chain writes
+```
+
+CRE broadcast requires:
+
+```
+CRE_ETH_PRIVATE_KEY=...
+```
 
 ---
 
@@ -82,127 +193,10 @@ Re‑unlock returns:
 
 ---
 
-## Demo apps & routes
-
-### `x402-next-app` (recommended)
-
-Routes:
+## Demo app routes (`x402-next-app`)
 
 - `POST /api/purchase` — x402 payment + purchase workflow  
 - `POST /api/reunlock` — re‑unlock workflow  
-
-Features:
-
-- Wallet‑based x402 payment flow  
-- Broadcast on‑chain writes by default  
-- Downloadable artifacts  
-
----
-
-## Getting started
-
-### Prereqs
-
-- Node.js 20+  
-- pnpm  
-- CRE CLI installed and on PATH  
-- Sepolia RPC in `project.yaml`  
-- Wallet + RPC for deploying EntitlementRegistry  
-
-### Install
-
-Installs workspace dependencies for contracts, workflows, protocol, and demo app.
-
-```bash
-pnpm install
-```
-
-### Deploy EntitlementRegistry (Sepolia)
-
-Deploys the on‑chain registry contract that stores entitlements (the source of truth).
-
-```bash
-pnpm --filter contracts deploy:sepolia
-```
-
-### Configure workflow (staging)
-
-Points the CRE workflow at the deployed registry address so reads/writes go to the correct contract.
-
-Update `creon-workflow/config.staging.json` with your deployed address:
-
-```json
-{
-  "chain": "ethereum-testnet-sepolia",
-  "entitlement_registry": "0xYOUR_DEPLOYED_ADDRESS",
-  "workflow_version": "0.0.0",
-  "policy_version": "0.0.0",
-  "idempotency_db_path": "./.creon-idempotency.sqlite",
-  "default_grant_ttl_seconds": 3600,
-  "authorized_keys": []
-}
-```
-
-### Run the demo app
-
-Starts the Next.js demo store where you can purchase once and re‑unlock later.
-
-```bash
-pnpm --filter x402-next-app dev
-```
-
----
-
-## Environment (x402 + broadcast)
-
-Required for `x402-next-app`:
-
-```
-NEXT_PUBLIC_THIRDWEB_CLIENT_ID=...
-THIRDWEB_SECRET_KEY=...
-X402_PAY_TO=0xYourReceiverAddress
-X402_CHAIN_ID=11155111
-```
-
-Optional:
-
-```
-DISABLE_BROADCAST=1   # opt‑out of on‑chain writes
-```
-
-CRE broadcast requires:
-
-```
-CRE_ETH_PRIVATE_KEY=...
-```
-
----
-
-## Simulations (CLI)
-
-Manual simulate (non‑interactive):
-
-Runs the purchase workflow from the CLI using a fixture payload (no interactive prompt).
-
-```bash
-cre workflow simulate ./creon-workflow --target=staging-settings \
-  --non-interactive --trigger-index=0 \
-  --http-payload @/m/creon/creon-workflow/fixtures/purchase.json \
-  --broadcast
-
-```
-
-Re‑unlock:
-
-Runs the re‑unlock workflow from the CLI using a fixture payload.
-
-```bash
-cre workflow simulate ./creon-workflow --target=staging-settings \
-  --non-interactive --trigger-index=0 \
-  --http-payload @/m/creon/creon-workflow/fixtures/reunlock.json
-```
-
-If you prefer interactive paste, see [Complete Workflow Guide](creon-workflow/COMPLETE_WORKFLOW.md).
 
 ---
 

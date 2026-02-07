@@ -3,10 +3,11 @@ import { NextResponse } from "next/server";
 import { createThirdwebClient, defineChain } from "thirdweb";
 import { facilitator, settlePayment } from "thirdweb/x402";
 
-import { runWorkflow } from "@/lib/cre";
+import { runWorkflow, type WorkflowResult } from "@/lib/cre";
 import { requireMinimumAmount, requirePaymentRefFormat } from "@/lib/guards";
 import { products } from "@/lib/products";
 import { checkAndMarkReplay, fingerprintIntent } from "@/lib/replay";
+import { encodeHeader } from "@/lib/x402";
 
 export const runtime = "nodejs";
 
@@ -158,7 +159,7 @@ export async function POST(req: Request) {
     const broadcast = !["1", "true", "yes"].includes(disableBroadcastRaw);
     const hasPrivateKey = Boolean(process.env.CRE_ETH_PRIVATE_KEY);
 
-    const result = await runWorkflow(payload, { broadcast });
+    const result = (await runWorkflow(payload, { broadcast })) as WorkflowResult;
 
     const response = NextResponse.json(result, { status: result.ok ? 200 : 500 });
     response.headers.set(
